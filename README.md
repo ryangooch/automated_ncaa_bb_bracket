@@ -1,6 +1,17 @@
 # Automated NCAA Bracket Selection with Python
 This is a python project to seed an NCAA Basketball Tournament Bracket. See [my post](https://ryangooch.github.io/Automated-Selection-Committee/) for more information on the underlying process.
 
+## Requirements
+The project was written with Python 3.5, although Python 2.x ought to be OK as well.
+
+The following packages are required:
+
+* [NumPy](http://www.numpy.org/)
+* [pandas](http://pandas.pydata.org/)
+* [openpyxl](https://openpyxl.readthedocs.io/en/default/)
+
+Many thanks to those projects for making this one a lot easier!
+
 ## Usage
 For now, this isn't something that would live on your Python path. Clone or download the repository, then copy bracket_picker.py to your working directory.
 
