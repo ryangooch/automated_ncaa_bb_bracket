@@ -120,6 +120,7 @@ class Bracketeer(object):
         Prints available polls for convenience
         """
         print(self.team_data_df.columns)
+        
     def get_tourney_teams (self, comp_polls = None, rank_calc_func = None,
             conf_winners = None) :
         """
