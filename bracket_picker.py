@@ -120,7 +120,7 @@ class Bracketeer(object):
         Prints available polls for convenience
         """
         print(self.team_data_df.columns)
-        
+
     def get_tourney_teams (self, comp_polls = None, rank_calc_func = None,
             conf_winners = None) :
         """
@@ -200,6 +200,9 @@ class Bracketeer(object):
 
         # all 68 teams in one array
         all_68 = np.append(auto_bid_teams,at_large_teams)
+
+        # First four next four
+        self._ffnf = summary_df[~summary_df['Team'].isin(auto_bid_teams)].iloc[36:44]['Team'].values
 
         self.final_68 = summary_df[summary_df['Team'].isin(all_68)]
 
