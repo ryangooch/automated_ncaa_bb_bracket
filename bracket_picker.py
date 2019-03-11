@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # ## Automated NCAA Tournament Bracket Filling with Python and Pandas
@@ -21,11 +20,8 @@ def rank_calc(x, y) :
     y:  Human Ranking
     Outputs
     If both rankings present,
-
     Rank = (2 * x + y) / 3
-
     If only computer ranking present, returns computer ranking.
-
     If user prefers another formula, it must be in this format
     """
     if np.isnan(y) :
@@ -114,13 +110,20 @@ class Bracketeer(object):
             team_data[2:],
             columns=column_names
         )
+        
+        # remove team name whitespace
+        self.team_data_df = self.team_data_df.apply(
+            lambda x: x.str.strip() if x.dtype == "object" else x)
 
     def print_polls(self) :
         """
         Prints available polls for convenience
         """
         print(self.team_data_df.columns)
-
+        
+    def get_conferences(self):
+        return pd.unique(self.team_data_df['Conf'])
+    
     def get_tourney_teams (self, comp_polls = None, rank_calc_func = None,
             conf_winners = None) :
         """
@@ -187,19 +190,32 @@ class Bracketeer(object):
         # ----
         # now that final rank is calculated, need to find auto-bids and 
         # at large
-        if conf_winners is not None :
-            auto_bid_teams = conf_winners
-        else :
-            auto_bid_confs = pd.unique(summary_df['Conf'])
+        
+        auto_bid_confs = pd.unique(summary_df['Conf'])
 
-            # Using groupby to grab the auto bids
-            auto_bid_teams = summary_df.groupby(['Conf']).head(1)['Team'].values
+        # Using groupby to grab the auto bids
+        auto_bid_teams = summary_df.groupby(['Conf']).head(1)
+            
+        if conf_winners is not None:
+            auto_bid_teams = self._replace_auto_bid(conf_winners,auto_bid_teams)
+        else:
+            auto_bid_teams = auto_bid_teams['Team'].values
+        # slated for removal below:
+#         else :
+#             auto_bid_confs = pd.unique(summary_df['Conf'])
+
+#             # Using groupby to grab the auto bids
+#             auto_bid_teams = summary_df.groupby(['Conf']).head(1)['Team'].values
 
         # and we can use ~isin now to get at larges
         at_large_teams = summary_df[~summary_df['Team'].isin(auto_bid_teams)].head(36)['Team'].values
 
         # all 68 teams in one array
         all_68 = np.append(auto_bid_teams,at_large_teams)
+        
+        self.auto_bid_teams = auto_bid_teams
+        self.at_large_teams = at_large_teams
+        self.all_68 = all_68
 
         # First four next four
         self._ffnf = summary_df[~summary_df['Team'].isin(auto_bid_teams)].iloc[36:44]['Team'].values
@@ -210,6 +226,25 @@ class Bracketeer(object):
 
         # return the dataframe to the user
         # return self.final_68
+        
+    def _replace_auto_bid(self,conf_winners,auto_bid_teams):
+        """
+        Replaces auto bid assumptions with actual winners. Winners expected
+        to be in dict where keys are conference names that are consistent
+        with internal names, while auto_bid_teams is a dataframe where
+        the top ranked team in each conference is present. Returns a list
+        of updated auto bid teams.
+        """
+        try:
+            for conf, team in conf_winners.items():
+                if team is not None:
+                    auto_bid_teams.loc[auto_bid_teams['Conf']==conf, 'Team'] = team
+            
+        except Exception as e:
+            print('it failed')
+            raise(e)
+            
+        return auto_bid_teams['Team'].values
 
     def fill_bracket(self) :
         # Need to tell Excel which cells get which team. Because we're 
@@ -251,4 +286,3 @@ class Bracketeer(object):
 
     #     # final_68[['Team','Conf']]
     #     final_68[final_68['Conf'].isin(['ACC'])]
-
