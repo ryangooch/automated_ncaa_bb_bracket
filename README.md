@@ -46,7 +46,7 @@ b = Bracketeer()
 # Let's view the available polls
 b.print_polls()
 
-# Output:
+# Example Output:
 # Index(['Team', 'Conf', 'WL', 'Rank', 'Mean', 'Trimmed', 'Median', 'StDev',
 #       '7OT', 'AP', 'BBT', 'BIH', 'BUR', 'BWE', 'D1A', 'DAV', 'DC', 'DC2',
 #       'DCI', 'DDB', 'DES', 'DII', 'DOK', 'DOL', 'EBP', 'ESR', 'FMG', 'FSH',
@@ -56,7 +56,16 @@ b.print_polls()
 #       'USA', 'WIL', 'WLK', 'WOB', 'WOL', ''],
 #      dtype='object')
 
-comp_polls = ['7OT','POM','SAG','DOK','PIG']
+# Manually mark winners of auto bid slots by conference with dict
+
+conference_winners = {conf:None for conf in b.get_conferences()}
+
+conference_winners['OVC'] = 'Murray St'
+conference_winners['BSo'] = 'Gardner Webb'
+conference_winners['MVC'] = 'Bradley'
+conference_winners['ASUN']= 'Liberty'
+
+comp_polls = ['POM','7OT','SAG','NET','MAS']
 
 def rank_calc(x, y) :
 # Averages polls and weights computer over human 3 to 1
@@ -65,10 +74,17 @@ def rank_calc(x, y) :
   else :
     return ((3 * x + y) / 4.)
 
-b.get_tourney_teams(comp_polls = comp_polls, rank_calc_func=rank_calc)
+b.get_tourney_teams(
+    comp_polls = comp_polls,
+    rank_calc_func = rank_calc,
+    conf_winners=conference_winners
+)
 
 # print the top 16 teams
 b.final_68.head(16)
+
+# produce bracket text to copy to template
+b.fill_bracket()
 ```
 
 If you have any questions/issues/ideas for improvement, feel free to add them in the Issues. I hope you enjoy this project!
