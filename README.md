@@ -59,9 +59,12 @@ b.print_polls()
 #      dtype='object')
 
 # Manually mark winners of auto bid slots by conference with dict
-
+# First create empty dictionary, where keys are conference names and 
+# teams are None
 conference_winners = {conf:None for conf in b.get_conferences()}
 
+# Populate with conference winners. At time of this writing, for 2019
+# NCAA Tournament, those teams are:
 conference_winners['OVC'] = 'Murray St'
 conference_winners['BSo'] = 'Gardner Webb'
 conference_winners['MVC'] = 'Bradley'
