@@ -35,7 +35,9 @@ This will print your 68 team field. If you want to put this on a bracket, you'll
 b.fill_bracket()
 ```
 
-And that's it! However, there are some functions in place to help you customize the selection process! At current, all available computer polls, and two human polls ([AP and Coaches Polls](http://www.espn.com/mens-college-basketball/rankings)) are used in the information. If you have a subset of polls you'd prefer, you can specify those. Additionally, you can formulate your own final rank calculation metric. An example is shown below.
+And that's it! 
+
+However, there are some functions in place to help you customize the selection process! At current, all available computer polls, and two human polls ([AP and Coaches Polls](http://www.espn.com/mens-college-basketball/rankings)) are used in the information. If you have a subset of polls you'd prefer, you can specify those. Additionally, you can formulate your own final rank calculation metric. An example is shown below.
 
 ``` python
 
