@@ -2,7 +2,7 @@
 This is a python project to seed an NCAA Basketball Tournament Bracket. See [my post](https://ryangooch.github.io/Automated-Selection-Committee/) for more information on the underlying process.
 
 ## Requirements
-The project was written with Python 3.5, although Python 2.x ought to be OK as well.
+The project was written with Python 3.7.
 
 The following packages are required:
 
@@ -13,10 +13,10 @@ The following packages are required:
 Many thanks to those projects for making this one a lot easier!
 
 ## Usage
-For now, this isn't something that would live on your Python path. Clone or download the repository, then copy bracket_picker.py to your working directory.
+For now, this isn't something that would live on your Python path. Clone or download the repository, then import from the directory as needed (or work within the directory).
 
 ``` python
-from bracket_picker import Bracketeer
+from metrics import Bracketeer
 
 b = Bracketeer()
 ```
@@ -41,7 +41,7 @@ However, there are some functions in place to help you customize the selection p
 
 ``` python
 
-from bracket_picker import Bracketeer
+from metrics import Bracketeer
 
 b = Bracketeer()
 
@@ -92,8 +92,87 @@ b.final_68.head(16)
 b.fill_bracket()
 ```
 
+## Ratings
+The code above uses *rankings* data, not *ratings* data, and ultimately computes an arithmetic mean of the computer and human rankings to produce the final bracket. There is ongoing development, however, to incorporate ratings data, thus utilizing the actual values produced by the analytics instead of ordinal positions. It is likely that averaging or otherwise manipulating these numerical outputs is more appropriate than manipulating the ordinal data. However, it is also far less convenient. Ken Massey graciously puts out a composite of rankings data, which is used in the code above. To get the raw values, though, one needs to scrape the web pages, or otherwise use an API, then massage it into a consistent format. This is not straightforward and usually requires a bespoke function to do this, along with developing a key/value list to convert team names to a standardized set of names.
+
+This is the goal of the more recent development in this project, along with some refactoring to make the code more modular and thus easier to add or remove functionality.
+
+Currently, three ratings are supported: 
+* [kenpom](https://kenpom.com/)
+* [ESPN BPI](http://www.espn.com/mens-college-basketball/bpi)
+* [Dokter Entropy](http://www.timetravelsports.com/colbb.html)
+
+It is hoped that soon the [NET](https://www.ncaa.com/rankings/basketball-men/d1/ncaa-mens-basketball-net-rankings) and [Massey](https://www.masseyratings.com/cb/ncaa-d1/ratings) ratings will be incorporated, to provide a larger sample size, a more diverse set of trusted tools, and allow some more interesting analysis.
+
+Current usage incorporates the three ratings above, and ignores human polls, since it is unclear whether averaging rankings with the aggregate ratings would produce a more valuable result.
+
+```python
+import numpy as np
+import pandas as pd
+from metrics import Bracketeer
+
+b = Bracketeer()
+
+# 2019 autobids
+conference_winners = {conf:None for conf in b.get_conferences()}
+
+conference_winners['OVC'] = 'Murray St'
+conference_winners['BSo'] = 'Gardner Webb'
+conference_winners['MVC'] = 'Bradley'
+conference_winners['ASUN']= 'Liberty'
+conference_winners['SC']  = 'Wofford'
+conference_winners['MAAC']= 'Iona'
+conference_winners['HL']  = 'N Kentucky'
+conference_winners['NEC'] = 'F Dickinson'
+conference_winners['CAA'] = 'Northeastern'
+conference_winners['SL']  = 'N Dakota St'
+conference_winners['WCC'] = "St Mary's CA"
+conference_winners['PL'] = 'Colgate'
+conference_winners['AEC'] = 'Vermont'
+conference_winners['MEAC'] = 'NC Central'
+conference_winners['B12'] = 'Iowa St'
+conference_winners['MWC'] = 'Utah St'
+conference_winners['SWAC'] = 'Prairie View'
+conference_winners['BE'] = 'Villanova'
+conference_winners['MAC'] = 'Buffalo'
+conference_winners['BSC'] = 'Montana'
+conference_winners['CUSA'] = 'Old Dominion'
+conference_winners['ACC'] = 'Duke'
+conference_winners["SLC"] = 'Abilene Chr'
+conference_winners['WAC'] = 'New Mexico St'
+conference_winners['P12'] = 'Oregon'
+conference_winners['BWC'] = 'UC Irvine'
+conference_winners['Ivy'] = 'Yale'
+conference_winners['SEC'] = 'Auburn'
+conference_winners['A10'] = 'St Louis'
+conference_winners['SBC'] = 'Georgia St'
+conference_winners['AAC'] = 'Cincinnati'
+conference_winners['B10'] = 'Michigan St'
+
+comp_polls = ['POM','DOK','EBP']
+
+def rank_calc(x, y):
+    if np.isnan(y) :
+        return x
+    else:
+        return ((3 * x + y) / 4.)
+
+b.get_tourney_teams(
+    comp_polls = comp_polls,
+    rank_calc_func = rank_calc,
+    conf_winners = conference_winners,
+    human_polls = False,
+    use_metrics = True
+)
+
+b.final_68[['Team','Conf','comp_mean','seed']].head(16)
+
+b.fill_bracket()
+```
+
 If you have any questions/issues/ideas for improvement, feel free to add them in the Issues. I hope you enjoy this project!
 
+Finally, I'd like to say a major THANK YOU to everyone who develops and posts their college basketball ratings online for us to use!
 
 
 
