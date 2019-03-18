@@ -28,7 +28,8 @@ I am essentially starting from the code in bracket_picker.py and editing here.
 
 from urllib.request import urlretrieve
 from openpyxl import Workbook, load_workbook
-from scrape import download_kenpom, download_dokent, download_bpi
+from scrape import download_kenpom, download_dokent, download_bpi, \
+    download_massey
 
 import numpy as np
 import pandas as pd
@@ -380,12 +381,16 @@ class Bracketeer(object):
         
         if not os.path.isfile('csv_files/kenpom.csv'):
             download_kenpom()
+
+        if not os.path.isfile('csv_files/massey.csv'):
+            download_massey()
         
         print('Downloading Finished!')
 
         kenpom_df = pd.read_csv('csv_files/kenpom.csv',index_col=False)
         bpi_df = pd.read_csv('csv_files/bpi.csv',index_col=False)
         dokent_df = pd.read_csv('csv_files/dokent.csv',index_col=False)
+        massey_df = pd.read_csv('csv_files/massey.csv',index_col=False)
         
         # remove seed from kenpom
         kenpom_df['Team'] = kenpom_df['Team'].map(remove_seed)
@@ -430,6 +435,7 @@ class Bracketeer(object):
         dokent_df.drop(columns=['Unnamed: 0','Rk'],inplace=True)
         bpi_df.drop(columns=['Unnamed: 0','Rk','Conf','W-L'],inplace=True)
         kenpom_df.drop(columns=['Unnamed: 0','Rk','W-L'],inplace=True)
+        massey_df.drop(columns=['Unnamed: 0','W-L'],inplace=True)
 
         # print(self.team_data_df.columns)
         # print(dokent_df.columns)
@@ -460,6 +466,14 @@ class Bracketeer(object):
             validate='one_to_one'
         )
 
+        comp_ratings = comp_ratings.merge(
+            right=massey_df,
+            on='Team',
+            how='inner',
+            suffixes=('','_massey'),
+            validate='one_to_one'
+        )
+
         # now standardize the summary rankings for each of the above. This is
         # acceptable I think, because the generating functions in each case
         # are designed to generate normal data, though the mean and variance
@@ -471,9 +485,11 @@ class Bracketeer(object):
             comp_ratings['AdjEM'].mean()) / comp_ratings['AdjEM'].std()
         comp_ratings['power'] = (comp_ratings['power'] - \
             comp_ratings['power'].mean()) / comp_ratings['power'].std()
+        comp_ratings['Rat'] = (comp_ratings['Rat'] - \
+            comp_ratings['Rat'].mean()) / comp_ratings['Rat'].std()
 
         comp_ratings['mean'] = \
-            comp_ratings[['BPI','AdjEM','power']].mean(axis=1)
+            comp_ratings[['BPI','AdjEM','power','Rat']].mean(axis=1)
         
         return comp_ratings
         

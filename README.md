@@ -97,12 +97,13 @@ The code above uses *rankings* data, not *ratings* data, and ultimately computes
 
 This is the goal of the more recent development in this project, along with some refactoring to make the code more modular and thus easier to add or remove functionality.
 
-Currently, three ratings are supported: 
+Currently, four ratings are supported: 
 * [kenpom](https://kenpom.com/)
 * [ESPN BPI](http://www.espn.com/mens-college-basketball/bpi)
 * [Dokter Entropy](http://www.timetravelsports.com/colbb.html)
+* [Massey](https://www.masseyratings.com/cb/ncaa-d1/ratings)*
 
-It is hoped that soon the [NET](https://www.ncaa.com/rankings/basketball-men/d1/ncaa-mens-basketball-net-rankings) and [Massey](https://www.masseyratings.com/cb/ncaa-d1/ratings) ratings will be incorporated, to provide a larger sample size, a more diverse set of trusted tools, and allow some more interesting analysis.
+It is hoped that soon the more ratings will be incorporated, to provide a larger sample size, a more diverse set of trusted tools, and allow some more interesting analysis.
 
 Current usage incorporates the three ratings above, and ignores human polls, since it is unclear whether averaging rankings with the aggregate ratings would produce a more valuable result.
 
@@ -175,7 +176,7 @@ If you have any questions/issues/ideas for improvement, feel free to add them in
 Finally, I'd like to say a major THANK YOU to everyone who develops and posts their college basketball ratings online for us to use!
 
 
-
+* Note: Massey ratings require Selenium with proper driver installed (in this case, FireFox). This will likely be changed to PhantomJS in time
 
 
 

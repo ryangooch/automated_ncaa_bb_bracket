@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from bs4 import BeautifulSoup
+from selenium import webdriver
 
 def principal_period(s):
     """
@@ -212,3 +213,49 @@ def download_bpi():
 
     bpi_df.to_csv("csv_files/bpi.csv") 
     
+def download_massey():
+    """
+    Download raw ratings from https://www.masseyratings.com/cb/ncaa-d1/ratings
+    """
+    URL = "https://www.masseyratings.com/cb/ncaa-d1/ratings"
+
+    browser = webdriver.Firefox()
+    browser.get(URL)
+    html = browser.page_source
+
+    soup = BeautifulSoup(html, 'lxml')
+
+    table = soup.find(id='mytable0')
+
+    rows = table.find_all('tr')
+
+    massey_data = []
+    for row in rows[2:]:
+        line = []
+        if row and row.find_all('td'):
+            line.append(row.find_all('td')[0].find('a').contents[0]) # Team
+            line.append(row.find_all('td')[1].contents[0]) # Record
+            line.append(row.find_all('td')[3].contents[1].contents[0]) # Rat
+            line.append(row.find_all('td')[4].contents[1].contents[0])# Pwr
+            line.append(row.find_all('td')[5].contents[1].contents[0])# Off
+            line.append(row.find_all('td')[6].contents[1].contents[0])# Def
+            line.append(row.find_all('td')[8].contents[1].contents[0])# SoS
+            massey_data.append(line)
+        else:
+            continue
+
+    df_cols = ['Team','W-L','Rat','Pwr','Off','Def','SoS']
+
+    massey_data = np.array(massey_data)
+
+    massey_df = pd.DataFrame(
+        massey_data,
+        columns = df_cols
+    )
+
+    cols_to_numeric = ['Rat','Pwr','Off','Def','SoS']
+
+    for col in cols_to_numeric:
+        massey_df[col] = massey_df[col].astype('float')
+
+    massey_df.to_csv("csv_files/massey.csv")
