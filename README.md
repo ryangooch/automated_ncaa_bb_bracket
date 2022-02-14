@@ -9,6 +9,7 @@ The following packages are required:
 * [NumPy](http://www.numpy.org/)
 * [pandas](http://pandas.pydata.org/)
 * [openpyxl](https://openpyxl.readthedocs.io/en/default/)
+* [Selenium](https://selenium-python.readthedocs.io/)
 
 Many thanks to those projects for making this one a lot easier!
 
