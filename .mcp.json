@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "l6e-budget": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/Users/karlinlevine-smith/projects/l6e-mcp",
+        "l6e-mcp"
+      ],
+      "env": {
+        "L6E_LOG_PATH": "/Users/karlinlevine-smith/.l6e/runs.jsonl"
+      }
+    }
+  }
+}

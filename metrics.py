@@ -26,7 +26,7 @@ a working automated bracket.
 I am essentially starting from the code in bracket_picker.py and editing here.
 """
 
-from urllib.request import urlretrieve
+from urllib.request import urlretrieve, Request, urlopen
 from openpyxl import Workbook, load_workbook
 from scrape import download_kenpom, download_dokent, download_bpi, \
     download_massey
@@ -63,13 +63,13 @@ def remove_seed(s):
 
 class Bracketeer(object):
     """
-    Downloads, aggregates data, selects final 68 teams for NCAA 
+    Downloads, aggregates data, selects final 68 teams for NCAA
     Tournament following a simple average of computer and human
     rankings.
     """
-    def __init__(self, csv_save_path = 'masseyratings.csv'):
+    def __init__(self, csv_save_path = 'masseyratings.csv', skip_download = False):
         self.save_path = csv_save_path
-        
+
 
         # List for seeding teams
         self.seeds = np.array([
@@ -91,7 +91,8 @@ class Bracketeer(object):
             16,16,16,16,16,16
         ])
 
-        self.download_csv()
+        if not skip_download:
+            self.download_csv()
         self.parse_csv()
 
         
@@ -101,8 +102,10 @@ class Bracketeer(object):
         stores in a folder, overwrites existing unless
         name specified
         """
-        composite_csv = 'http://www.masseyratings.com/cb/compare.csv'
-        urlretrieve(composite_csv, self.save_path)
+        composite_csv = 'https://www.masseyratings.com/cb/compare.csv'
+        req = Request(composite_csv, headers={'User-Agent': 'Mozilla/5.0'})
+        with urlopen(req) as response, open(self.save_path, 'wb') as out:
+            out.write(response.read())
 
     def parse_csv(self) :
         """
@@ -111,7 +114,7 @@ class Bracketeer(object):
         data starts two rows after
         """
         data = []
-        with open(self.save_path, newline='') as csvfile:
+        with open(self.save_path, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.reader(csvfile, delimiter = ',')
             for row in reader:
                 data.append(row)
@@ -137,9 +140,16 @@ class Bracketeer(object):
         for i in range(len(column_names)):
             column_names[i] = column_names[i].lstrip()
 
+        # Determine where data rows start: skip blank/empty row after
+        # the header if present (Massey Ratings format has one), otherwise
+        # data starts immediately after the header (exported CSV format).
+        data_start = 1
+        if len(team_data) > 1 and all(c.strip() == '' for c in team_data[1]):
+            data_start = 2
+
         # drop the data set in a pandas Dataframe
         self.team_data_df = pd.DataFrame(
-            team_data[2:],
+            team_data[data_start:],
             columns=column_names
         )
         
@@ -264,8 +274,11 @@ class Bracketeer(object):
         
         auto_bid_confs = pd.unique(summary_df['Conf'])
 
+        # Independents don't get an auto bid
+        conf_teams = summary_df[~summary_df['Conf'].str.contains('Ind', na=False)]
+
         # Using groupby to grab the auto bids
-        auto_bid_teams = summary_df.groupby(['Conf']).head(1)
+        auto_bid_teams = conf_teams.groupby(['Conf']).head(1)
             
         if conf_winners is not None:
             auto_bid_teams = self._replace_auto_bid(conf_winners,auto_bid_teams)
@@ -279,7 +292,8 @@ class Bracketeer(object):
 #             auto_bid_teams = summary_df.groupby(['Conf']).head(1)['Team'].values
 
         # and we can use ~isin now to get at larges
-        at_large_teams = summary_df[~summary_df['Team'].isin(auto_bid_teams)].head(36)['Team'].values
+        n_at_large = 68 - len(auto_bid_teams)
+        at_large_teams = summary_df[~summary_df['Team'].isin(auto_bid_teams)].head(n_at_large)['Team'].values
 
         # all 68 teams in one array
         all_68 = np.append(auto_bid_teams,at_large_teams)
@@ -306,7 +320,8 @@ class Bracketeer(object):
         cols_to_drop = ["WL","Rank","Mean","Trimmed","Median","StDev","AP",
             "USA"]
 
-        # create computer ranking dataframe
+        # create computer ranking dataframe — only drop columns that exist
+        cols_to_drop = [c for c in cols_to_drop if c in self.team_data_df.columns]
         comp_rankings = self.team_data_df.drop(cols_to_drop,axis=1)
 
         # If user provides list of specific computer polls to use, subset here
@@ -324,7 +339,7 @@ class Bracketeer(object):
         # Convert computer rankings dataframe columns to numeric where
         # appropriate
         comp_rankings = comp_rankings.apply(\
-            lambda x: pd.to_numeric(x, errors='ignore'))
+            lambda x: pd.to_numeric(x, errors='coerce'))
 
         # compute arithmetic mean of computer rankings
         comp_rankings['mean'] = comp_rankings.mean(axis=1,numeric_only=True)
@@ -350,7 +365,7 @@ class Bracketeer(object):
 
         # convert rankings to numeric
         human_rankings = human_rankings.apply(\
-            lambda x: pd.to_numeric(x, errors='ignore'))
+            lambda x: pd.to_numeric(x, errors='coerce'))
 
         human_rankings['mean'] = human_rankings.mean(
             axis = 1, numeric_only = True, skipna = True)
@@ -542,3 +557,14 @@ class Bracketeer(object):
         today = str(datetime.date.today())
         save_file = 'bracket' + today + '.xlsx'
         wb.save(save_file)
+
+    def save_bracket_pdf(self, output_path=None, title=None):
+        """
+        Generate a visually appealing PDF bracket of the 68 tournament teams.
+
+        Inputs:
+            output_path: Path to save PDF. Default: brackets/bracket_<date>.pdf
+            title: Title text at the top of the bracket
+        """
+        from bracket_pdf import generate_bracket_pdf
+        return generate_bracket_pdf(self.final_68, output_path, title)
