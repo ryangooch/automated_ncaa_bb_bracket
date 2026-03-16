@@ -117,7 +117,11 @@ def generate_bracket_pdf(final_68_df, output_path=None, title=None):
 # ---------------------------------------------------------------------------
 
 def _assign_teams(df):
-    """S-curve assignment of 68 teams into 4 regions + First Four list."""
+    """S-curve assignment of 68 teams into 4 regions + First Four list.
+
+    After initial placement, swaps same-seeded teams between regions to
+    minimize same-conference matchups in the first two rounds.
+    """
     regions = {i: {} for i in range(4)}
     first_four = []
 
@@ -142,7 +146,87 @@ def _assign_teams(df):
             first_four.append((teams[2], teams[3], seed))
             first_four.append((teams[4], teams[5], seed))
 
+    # Build team -> conference lookup if conference data is available
+    if 'Conf' in df.columns:
+        team_conf = {}
+        for _, row in df.iterrows():
+            team_conf[row['Team']] = row['Conf']
+        regions = _separate_conferences(regions, team_conf)
+
     return regions, first_four
+
+
+# Round-2 pods: seeds that can meet by the second round within a region
+_PODS = [{1, 16, 8, 9}, {5, 12, 4, 13}, {6, 11, 3, 14}, {7, 10, 2, 15}]
+
+
+def _conf_conflicts(regions, team_conf):
+    """Count same-conference pairs sharing a region, weighted by proximity.
+
+    Pod-level conflicts (can meet in rounds 1-2) score 2.
+    Same-region but different-pod conflicts (meet in Sweet 16) score 1.
+    """
+    score = 0
+    for r in range(4):
+        teams_in_region = [
+            (seed, team) for seed, team in regions[r].items()
+            if team != 'Play-in'
+        ]
+        for i in range(len(teams_in_region)):
+            for j in range(i + 1, len(teams_in_region)):
+                s_i, t_i = teams_in_region[i]
+                s_j, t_j = teams_in_region[j]
+                if team_conf.get(t_i) == team_conf.get(t_j):
+                    same_pod = any(
+                        s_i in pod and s_j in pod for pod in _PODS
+                    )
+                    score += 2 if same_pod else 1
+    return score
+
+
+def _separate_conferences(regions, team_conf):
+    """Swap same-seeded teams between regions to reduce conference conflicts.
+
+    Iterates over each seed line and tries all pairwise region swaps,
+    greedily accepting any swap that lowers the total conflict score.
+    Multiple passes until no improvement is found.
+    """
+    improved = True
+    while improved:
+        improved = False
+        seeds_in_bracket = set()
+        for r in range(4):
+            seeds_in_bracket.update(regions[r].keys())
+
+        for seed in sorted(seeds_in_bracket):
+            # Collect which regions have a real team at this seed
+            candidates = [
+                r for r in range(4)
+                if regions[r].get(seed) and regions[r][seed] != 'Play-in'
+            ]
+            if len(candidates) < 2:
+                continue
+
+            for a in range(len(candidates)):
+                for b in range(a + 1, len(candidates)):
+                    ra, rb = candidates[a], candidates[b]
+                    before = _conf_conflicts(regions, team_conf)
+
+                    # Try swap
+                    regions[ra][seed], regions[rb][seed] = (
+                        regions[rb][seed], regions[ra][seed]
+                    )
+                    after = _conf_conflicts(regions, team_conf)
+
+                    if after < before:
+                        improved = True  # keep swap, restart
+                    else:
+                        # revert
+                        regions[ra][seed], regions[rb][seed] = (
+                            regions[rb][seed], regions[ra][seed]
+                        )
+
+    return regions
 
 
 def _matchup_order(region):
