@@ -16,4 +16,5 @@ dependencies = [
     "reportlab",
     "selenium",
     "playwright",
+    "rich",
 ]

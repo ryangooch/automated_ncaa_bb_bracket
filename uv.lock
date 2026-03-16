@@ -216,6 +216,7 @@ dependencies = [
     { name = "playwright" },
     { name = "reportlab" },
     { name = "requests" },
+    { name = "rich" },
     { name = "selenium" },
 ]
 
@@ -231,6 +232,7 @@ requires-dist = [
     { name = "playwright" },
     { name = "reportlab" },
     { name = "requests" },
+    { name = "rich" },
     { name = "selenium" },
 ]
 
