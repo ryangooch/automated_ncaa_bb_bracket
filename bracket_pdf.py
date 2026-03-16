@@ -61,13 +61,16 @@ def generate_bracket_pdf(final_68_df, output_path=None, title=None):
     bracket_bottom = MARGIN + FF_H
     bracket_h = bracket_top - bracket_bottom
 
-    center_w = 100
-    half_w = (PAGE_W - 2 * MARGIN - center_w) / 2
     region_gap = 8
     region_h = (bracket_h - region_gap) / 2
 
-    name_w = half_w * 0.27
-    round_w = (half_w - name_w) / 4
+    # Uniform column widths: 11 equal cols (4 left + 3 center + 4 right)
+    # Team names are drawn inside the first round column on each side.
+    total_w = PAGE_W - 2 * MARGIN
+    round_w = total_w / 11
+    center_w = round_w * 3
+    half_w = round_w * 4
+    name_w = 0
 
     # Title
     c.setFont('Helvetica-Bold', 14)
@@ -157,7 +160,7 @@ def _draw_round_headers(c, margin, half_w, center_w, name_w, round_w, y):
 
     left_labels = ['1st Round', '2nd Round', 'Sweet 16', 'Elite Eight']
     for i, lbl in enumerate(left_labels):
-        x = margin + name_w + (i + 0.5) * round_w
+        x = margin + (i + 0.5) * round_w
         c.drawCentredString(x, y, lbl)
 
     cx = margin + half_w
@@ -193,22 +196,20 @@ def _draw_region(c, teams, x0, y0, direction, width, height,
         ys.append([(prev[j] + prev[j + 1]) / 2
                    for j in range(0, len(prev), 2)])
 
-    # x of each vertical junction
+    # x of each vertical junction — names are inside the first round column
     if direction == 'right':
-        name_edge = x0 + name_w
-        jx = [name_edge + (i + 1) * round_w for i in range(4)]
+        jx = [x0 + (i + 1) * round_w for i in range(4)]
     else:
-        name_edge = x0 + width - name_w
-        jx = [name_edge - (i + 1) * round_w for i in range(4)]
+        jx = [x0 + width - (i + 1) * round_w for i in range(4)]
 
-    # Region label – placed above the first team slot, outside the bracket
-    c.setFont('Helvetica-Bold', 7)
+    # Region label – above the bracket area
+    c.setFont('Helvetica-Bold', 5.5)
     c.setFillColor(NAVY)
-    label_y = y0 + 4
+    label_y = y0 + 5
     if direction == 'right':
-        c.drawString(x0 + 1, label_y, region_name)
+        c.drawString(x0, label_y, region_name)
     else:
-        c.drawRightString(x0 + width - 1, label_y, region_name)
+        c.drawRightString(x0 + width, label_y, region_name)
 
     # Bracket lines
     c.setStrokeColor(LINE_COLOR)
@@ -216,7 +217,10 @@ def _draw_region(c, teams, x0, y0, direction, width, height,
 
     for rd in range(4):
         positions = ys[rd]
-        h_start = name_edge if rd == 0 else jx[rd - 1]
+        if rd == 0:
+            h_start = x0 if direction == 'right' else x0 + width
+        else:
+            h_start = jx[rd - 1]
 
         for j in range(0, len(positions), 2):
             yt, yb = positions[j], positions[j + 1]
@@ -231,30 +235,22 @@ def _draw_region(c, teams, x0, y0, direction, width, height,
     else:
         c.line(jx[3], wy, jx[3] - round_w * 0.5, wy)
 
-    # Lines under team names (so names sit on bracket lines)
-    for i in range(n):
-        y = ys[0][i]
-        if direction == 'right':
-            c.line(x0 + 11, y, name_edge, y)
-        else:
-            c.line(name_edge, y, x0 + width - 11, y)
-
-    # Team names
+    # Team names (drawn inside the first round column)
     for i, (seed, team) in enumerate(teams):
         y = ys[0][i]
-        display = team if len(team) <= 18 else team[:17] + '.'
+        display = team if len(team) <= 16 else team[:15] + '.'
 
         if direction == 'right':
-            c.setFont('Helvetica-Bold', 6)
+            c.setFont('Helvetica-Bold', 5.5)
             c.setFillColor(DARK)
             c.drawString(x0 + 1, y + 1.5, str(seed))
-            c.setFont('Helvetica', 6.5)
-            c.drawString(x0 + 13, y + 1.5, display)
+            c.setFont('Helvetica', 5.5)
+            c.drawString(x0 + 12, y + 1.5, display)
         else:
-            c.setFont('Helvetica', 6.5)
+            c.setFont('Helvetica', 5.5)
             c.setFillColor(DARK)
-            c.drawRightString(x0 + width - 13, y + 1.5, display)
-            c.setFont('Helvetica-Bold', 6)
+            c.drawRightString(x0 + width - 12, y + 1.5, display)
+            c.setFont('Helvetica-Bold', 5.5)
             c.drawRightString(x0 + width - 1, y + 1.5, str(seed))
 
     return wy
