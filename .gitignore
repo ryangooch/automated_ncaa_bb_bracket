@@ -216,3 +216,6 @@ __marimo__/
 .streamlit/secrets.toml
 .claude/
 *.csv
+*.db
+torvik_db_guide.md
+scrape_torvik.py
